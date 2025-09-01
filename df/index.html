@@ -435,7 +435,7 @@
 
     <script>
         // State management
-        let selectedDate = null;
+        let selectedDates = [];
         
         // Ticket pricing
         const ticketPrice = 5000;
@@ -465,18 +465,16 @@
             day.addEventListener('click', () => {
                 const date = day.dataset.date;
 
-                // Single selection logic
-                if (selectedDate === date) {
-                    // Deselect if the same date is clicked again
+                // Toggle selection
+                if (selectedDates.includes(date)) {
+                    selectedDates = selectedDates.filter(d => d !== date);
                     day.classList.remove('selected');
-                    selectedDate = null;
                 } else {
-                    days.forEach(d => d.classList.remove('selected'));
+                    selectedDates.push(date);
                     day.classList.add('selected');
-                    selectedDate = date;
                 }
                 
-                if (selectedDate) {
+                if (selectedDates.length > 0) {
                     showOrderSummary();
                 } else {
                     orderPlaceholder.style.display = 'block';
@@ -488,15 +486,25 @@
         });
 
         checkoutBtn.addEventListener('click', () => {
-            if (selectedDate) {
-                const paymentLink = paystackLinks[selectedDate];
+            if (selectedDates.length === 1) {
+                const paymentLink = paystackLinks[selectedDates[0]];
                 if (paymentLink) {
                     window.open(paymentLink, '_blank');
                 } else {
                     alert('Payment link not configured for this selection.');
                 }
+            } else if (selectedDates.length > 1) {
+                window.open('https://paystack.shop/pay/dflagos25', '_blank');
             }
         });
+
+        const ticketDetails = {
+            '2025-11-18': 'Tuesday - Student Edition',
+            '2025-11-19': 'Wednesday - Design & Content Day',
+            '2025-11-20': 'Thursday - Startup & Pro Dev Day',
+            '2025-11-21': 'Friday - Engineering & Infrastructure Day',
+            '2025-11-22': 'Saturday - AI & Cloud Day'
+        };
 
         // Functions
         function showOrderSummary() {
@@ -505,11 +513,14 @@
         }
 
         function enableTicketDetails() {
-            if (selectedDate) {
+            if (selectedDates.length > 0) {
                 ticketDetailsSection.classList.add('active');
-                let detailsHtml = `<strong>Single Day Pass</strong><br>`;
-                detailsHtml += `Selected for ${formatDate(selectedDate)}<br>
-                              Price: ₦${ticketPrice.toLocaleString()}`;
+                let detailsHtml = selectedDates.map(date => {
+                    return `<div>
+                                <strong>${ticketDetails[date]}</strong><br>
+                                <small>${formatDate(date)}</small>
+                            </div>`;
+                }).join('<hr style="margin: 10px 0;">');
                 ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = detailsHtml;
             } else {
                 ticketDetailsSection.classList.remove('active');
@@ -518,11 +529,18 @@
         }
 
         function updateOrderSummary() {
-            if (selectedDate) {
-                selectedDateDisplay.textContent = formatDate(selectedDate);
-                ticketNameDisplay.textContent = 'Single Day Pass';
-                ticketPriceDisplay.textContent = `₦${ticketPrice.toLocaleString()}`;
-                totalPriceDisplay.textContent = `₦${ticketPrice.toLocaleString()}`;
+            if (selectedDates.length > 0) {
+                selectedDateDisplay.innerHTML = selectedDates.map(date => `<div>${formatDate(date)}</div>`).join('');
+
+                if (selectedDates.length > 1) {
+                    ticketNameDisplay.textContent = 'Multi-Day Pass';
+                } else {
+                    ticketNameDisplay.textContent = 'Single Day Pass';
+                }
+
+                const total = ticketPrice * selectedDates.length;
+                ticketPriceDisplay.textContent = `₦${total.toLocaleString()}`;
+                totalPriceDisplay.textContent = `₦${total.toLocaleString()}`;
                 checkoutBtn.disabled = false;
                 checkoutBtn.textContent = 'Proceed to Payment';
 
