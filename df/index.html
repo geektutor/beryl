@@ -438,7 +438,13 @@
         let selectedDates = [];
         
         // Ticket pricing
-        const ticketPrice = 5000;
+        const ticketPrices = {
+            '2025-11-18': 5000,
+            '2025-11-19': 5000,
+            '2025-11-20': 50000,
+            '2025-11-21': 5000,
+            '2025-11-22': 5000
+        };
 
         // Paystack payment links
         const paystackLinks = {
@@ -516,9 +522,10 @@
             if (selectedDates.length > 0) {
                 ticketDetailsSection.classList.add('active');
                 let detailsHtml = selectedDates.map(date => {
+                    const price = ticketPrices[date];
                     return `<div>
                                 <strong>${ticketDetails[date]}</strong><br>
-                                <small>${formatDate(date)}</small>
+                                <small>${formatDate(date)}</small> - ₦${price.toLocaleString()}
                             </div>`;
                 }).join('<hr style="margin: 10px 0;">');
                 ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = detailsHtml;
@@ -538,7 +545,7 @@
                     ticketNameDisplay.textContent = 'Single Day Pass';
                 }
 
-                const total = ticketPrice * selectedDates.length;
+                const total = selectedDates.reduce((acc, date) => acc + ticketPrices[date], 0);
                 ticketPriceDisplay.textContent = `₦${total.toLocaleString()}`;
                 totalPriceDisplay.textContent = `₦${total.toLocaleString()}`;
                 checkoutBtn.disabled = false;
