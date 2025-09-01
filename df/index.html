@@ -364,11 +364,6 @@
                         <h2 class="section-title">Select Date(s)</h2>
                     </div>
 
-                    <div class="ticket-types">
-                        <button class="ticket-type active" data-type="regular">Regular Ticket</button>
-                        <button class="ticket-type" data-type="pro">Pro Ticket</button>
-                    </div>
-
                     <div class="calendar">
                         <div class="calendar-header">November 2025</div>
                         <div class="calendar-grid">
@@ -422,12 +417,12 @@
 
                     <div class="ticket-item">
                         <span class="ticket-name" id="ticket-name">Single Day Pass</span>
-                        <span class="ticket-price" id="ticket-price">₦15,000</span>
+                        <span class="ticket-price" id="ticket-price">₦5,000</span>
                     </div>
 
                     <div class="total">
                         <span>Total</span>
-                        <span id="total-price">₦15,000</span>
+                        <span id="total-price">₦5,000</span>
                     </div>
 
                     <button class="checkout-btn" id="checkout-btn" disabled>
@@ -440,40 +435,21 @@
 
     <script>
         // State management
-        let selectedDates = [];
-        let selectedTicketType = 'regular';
+        let selectedDate = null;
         
         // Ticket pricing
-        const ticketPrices = {
-            regular: 15000,
-            pro: 75000
-        };
+        const ticketPrice = 5000;
 
-        const ticketNames = {
-            regular: 'Regular Ticket',
-            pro: 'Pro Ticket'
-        };
-
-        // Paystack payment links (you'll need to replace these with your actual links)
+        // Paystack payment links
         const paystackLinks = {
-            regular: {
-                '2025-11-18': 'https://paystack.com/pay/devfest-single-tue',
-                '2025-11-19': 'https://paystack.com/pay/devfest-single-wed',
-                '2025-11-20': 'https://paystack.com/pay/devfest-single-thu',
-                '2025-11-21': 'https://paystack.com/pay/devfest-single-fri',
-                '2025-11-22': 'https://paystack.com/pay/devfest-single-sat'
-            },
-            pro: {
-                '2025-11-18': 'https://paystack.com/pay/devfest-pro-tue',
-                '2025-11-19': 'https://paystack.com/pay/devfest-pro-wed',
-                '2025-11-20': 'https://paystack.com/pay/devfest-pro-thu',
-                '2025-11-21': 'https://paystack.com/pay/devfest-pro-fri',
-                '2025-11-22': 'https://paystack.com/pay/devfest-pro-sat'
-            }
+            '2025-11-18': 'https://paystack.com/buy/dflagos25-tuesday',
+            '2025-11-19': 'https://paystack.com/buy/dflagos25-wednesday',
+            '2025-11-20': 'https://paystack.com/buy/dflagos25-thursday',
+            '2025-11-21': 'https://paystack.com/buy/dflagos25-friday',
+            '2025-11-22': 'https://paystack.com/buy/dflagos25-saturday'
         };
 
         // DOM elements
-        const ticketTypes = document.querySelectorAll('.ticket-type');
         const days = document.querySelectorAll('.day');
         const ticketDetailsSection = document.querySelector('.ticket-details-section');
         const orderPlaceholder = document.querySelector('.order-placeholder');
@@ -485,39 +461,22 @@
         const checkoutBtn = document.getElementById('checkout-btn');
 
         // Event listeners
-        ticketTypes.forEach(type => {
-            type.addEventListener('click', () => {
-                // Clear selections when ticket type changes
-                days.forEach(d => d.classList.remove('selected'));
-                selectedDates = [];
-
-                ticketTypes.forEach(t => t.classList.remove('active'));
-                type.classList.add('active');
-                selectedTicketType = type.dataset.type;
-                updateOrderSummary();
-            });
-        });
-
         days.forEach(day => {
             day.addEventListener('click', () => {
                 const date = day.dataset.date;
 
-                if (selectedTicketType === 'regular') {
-                    // Toggle selection for regular tickets
-                    day.classList.toggle('selected');
-                    if (selectedDates.includes(date)) {
-                        selectedDates = selectedDates.filter(d => d !== date);
-                    } else {
-                        selectedDates.push(date);
-                    }
-                } else { // For 'pro' ticket type
-                    // Single selection logic
+                // Single selection logic
+                if (selectedDate === date) {
+                    // Deselect if the same date is clicked again
+                    day.classList.remove('selected');
+                    selectedDate = null;
+                } else {
                     days.forEach(d => d.classList.remove('selected'));
                     day.classList.add('selected');
-                    selectedDates = [date];
+                    selectedDate = date;
                 }
                 
-                if (selectedDates.length > 0) {
+                if (selectedDate) {
                     showOrderSummary();
                 } else {
                     orderPlaceholder.style.display = 'block';
@@ -529,16 +488,12 @@
         });
 
         checkoutBtn.addEventListener('click', () => {
-            if (selectedDates.length > 0 && selectedTicketType) {
-                // For now, checkout is disabled for multi-day regular, will be handled in next step
-                if (selectedTicketType === 'pro' || selectedDates.length === 1) {
-                    const date = selectedDates[0];
-                    const paymentLink = paystackLinks[selectedTicketType][date];
-                    if (paymentLink) {
-                        window.open(paymentLink, '_blank');
-                    } else {
-                        alert('Payment link not configured for this selection.');
-                    }
+            if (selectedDate) {
+                const paymentLink = paystackLinks[selectedDate];
+                if (paymentLink) {
+                    window.open(paymentLink, '_blank');
+                } else {
+                    alert('Payment link not configured for this selection.');
                 }
             }
         });
@@ -550,47 +505,26 @@
         }
 
         function enableTicketDetails() {
-            if (selectedDates.length > 0) {
+            if (selectedDate) {
                 ticketDetailsSection.classList.add('active');
-                let detailsHtml = `<strong>${ticketNames[selectedTicketType]}</strong><br>`;
-                if (selectedTicketType === 'regular') {
-                    const totalPrice = ticketPrices.regular * selectedDates.length;
-                    detailsHtml += `Selected: ${formatDates(selectedDates)}<br>
-                                  Price: ₦${totalPrice.toLocaleString()}`;
-                } else { // 'pro'
-                    detailsHtml += `Selected for ${formatDate(selectedDates[0])}<br>
-                                  Price: ₦${ticketPrices.pro.toLocaleString()}`;
-                }
+                let detailsHtml = `<strong>Single Day Pass</strong><br>`;
+                detailsHtml += `Selected for ${formatDate(selectedDate)}<br>
+                              Price: ₦${ticketPrice.toLocaleString()}`;
                 ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = detailsHtml;
             } else {
                 ticketDetailsSection.classList.remove('active');
-                ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = 'Select your ticket date(s) to see ticket details.';
+                ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = 'Select a date to see ticket details.';
             }
         }
 
         function updateOrderSummary() {
-            if (selectedDates.length > 0) {
-                let totalPrice;
-                if (selectedTicketType === 'regular') {
-                    totalPrice = ticketPrices.regular * selectedDates.length;
-                    selectedDateDisplay.textContent = formatDates(selectedDates);
-                    ticketNameDisplay.textContent = `${ticketNames.regular} (${selectedDates.length} ${selectedDates.length > 1 ? 'days' : 'day'})`;
-                    ticketPriceDisplay.textContent = `₦${totalPrice.toLocaleString()}`;
-                } else { // 'pro'
-                    totalPrice = ticketPrices.pro;
-                    selectedDateDisplay.textContent = formatDate(selectedDates[0]);
-                    ticketNameDisplay.textContent = ticketNames.pro;
-                    ticketPriceDisplay.textContent = `₦${totalPrice.toLocaleString()}`;
-                }
-                totalPriceDisplay.textContent = `₦${totalPrice.toLocaleString()}`;
-                
-                if (selectedTicketType === 'regular' && selectedDates.length > 1) {
-                    checkoutBtn.disabled = true;
-                    checkoutBtn.textContent = 'Multi-day pass not available for online checkout';
-                } else {
-                    checkoutBtn.disabled = false;
-                    checkoutBtn.textContent = 'Proceed to Payment';
-                }
+            if (selectedDate) {
+                selectedDateDisplay.textContent = formatDate(selectedDate);
+                ticketNameDisplay.textContent = 'Single Day Pass';
+                ticketPriceDisplay.textContent = `₦${ticketPrice.toLocaleString()}`;
+                totalPriceDisplay.textContent = `₦${ticketPrice.toLocaleString()}`;
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = 'Proceed to Payment';
 
             } else {
                 // Reset to placeholder state
@@ -601,7 +535,7 @@
                 checkoutBtn.disabled = true;
                 checkoutBtn.textContent = 'Proceed to Payment';
                 ticketDetailsSection.classList.remove('active');
-                ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = 'Select your ticket date(s) to see ticket details.';
+                ticketDetailsSection.querySelector('.ticket-details-placeholder').innerHTML = 'Select a date to see ticket details.';
             }
         }
 
@@ -609,15 +543,6 @@
             const date = new Date(dateString);
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return date.toLocaleDateString('en-US', options);
-        }
-
-        function formatDates(dateStrings) {
-            if (dateStrings.length === 0) return '-';
-            const shortDates = dateStrings.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            if (shortDates.length > 2) {
-                return `${shortDates.slice(0, 2).join(', ')} & ${shortDates.length - 2} more`;
-            }
-            return shortDates.join(' & ');
         }
 
         // Initialize
